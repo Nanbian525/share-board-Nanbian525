@@ -3,129 +3,70 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>分享墙 · 云端协作版</title>
-  <script>
-    window.__supabaseReady = new Promise(function (resolve, reject) {
-      var urls = [
-        "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js",
-        "https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js",
-        "https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.49.1/umd/supabase.min.js"
-      ];
-      var i = 0;
-      function tryNext() {
-        if (window.supabase && window.supabase.createClient) {
-          resolve();
-          return;
-        }
-        if (i >= urls.length) {
-          reject(new Error("无法加载 Supabase 库，请检查网络或换浏览器重试"));
-          return;
-        }
-        var s = document.createElement("script");
-        s.src = urls[i++];
-        s.onload = function () {
-          if (window.supabase && window.supabase.createClient) resolve();
-          else tryNext();
-        };
-        s.onerror = tryNext;
-        document.head.appendChild(s);
-      }
-      tryNext();
-    });
-  </script>
+  <title>分享墙 · 云端版</title>
   <style>
     :root {
-      --bg: #f5f4f1; --card: #fff; --text: #1a1a1a; --muted: #6b6b6b;
-      --border: #e8e6e1; --accent: #2d6a4f; --accent-hover: #1b4332;
-      --danger: #c1121f; --shadow: 0 1px 3px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.04);
-      --radius: 12px;
+      --bg:#f5f4f1;--card:#fff;--text:#1a1a1a;--muted:#6b6b6b;--border:#e8e6e1;
+      --accent:#2d6a4f;--accent-hover:#1b4332;--danger:#c1121f;
+      --shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.04);--radius:12px;
     }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
-      background: var(--bg); color: var(--text); line-height: 1.6; font-size: 15px; }
-    .page { max-width: 720px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
-    .header { text-align: center; margin-bottom: 1rem; }
-    .header h1 { margin: 0; font-size: 1.75rem; }
-    .subtitle { color: var(--muted); font-size: 0.95rem; margin: 0.5rem 0 0; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-      box-shadow: var(--shadow); padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
-    .section-title { margin: 0 0 1rem; font-size: 1rem; font-weight: 600; }
-    .field { display: block; margin-bottom: 0.85rem; }
-    .field > span { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.3rem; }
-    input[type="text"], input[type="url"], input[type="password"], textarea {
-      width: 100%; font: inherit; padding: 0.6rem 0.85rem; border: 1px solid var(--border);
-      border-radius: 8px; background: var(--bg);
-    }
-    textarea { min-height: 88px; resize: vertical; }
-    .btn { font: inherit; font-weight: 500; cursor: pointer; border: none; border-radius: 8px;
-      padding: 0.55rem 1rem; }
-    .btn.primary { background: var(--accent); color: #fff; }
-    .btn.primary:hover { background: var(--accent-hover); }
-    .btn.primary:disabled { opacity: 0.55; cursor: not-allowed; }
-    .btn.loading { position: relative; color: transparent !important; }
-    .btn.loading::after {
-      content: ""; position: absolute; left: 50%; top: 50%;
-      width: 1rem; height: 1rem; margin: -0.5rem 0 0 -0.5rem;
-      border: 2px solid rgba(255,255,255,.35); border-top-color: #fff;
-      border-radius: 50%; animation: spin .7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
-    .btn.ghost:hover { background: var(--bg); color: var(--text); }
-    .btn.small { padding: 0.35rem 0.75rem; font-size: 0.85rem; }
-    .btn.danger { color: var(--danger); border-color: #f5c2c7; }
-    .row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
-    .status { font-size: 0.85rem; color: var(--muted); }
-    .status.ok { color: var(--accent); }
-    .status.err { color: var(--danger); }
-    .hint { font-size: 0.82rem; color: var(--muted); line-height: 1.5; margin: 0 0 1rem; }
-    .posts { display: flex; flex-direction: column; gap: 1rem; }
-    .post { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-      box-shadow: var(--shadow); padding: 1.25rem 1.5rem; }
-    .post-text { margin: 0 0 0.75rem; white-space: pre-wrap; word-break: break-word; }
-    .post-link { color: var(--accent); word-break: break-all; display: inline-block; margin-bottom: 0.75rem; }
-    .post-image { max-width: 100%; max-height: 360px; border-radius: 8px; display: block; margin-bottom: 0.75rem; }
-    .post-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem;
-      padding-top: 0.75rem; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--muted); }
-    .post-actions { display: flex; gap: 0.5rem; }
-    .empty { text-align: center; color: var(--muted); padding: 2rem; }
-    .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
-      background: var(--text); color: #fff; padding: 0.65rem 1.25rem; border-radius: 8px; z-index: 99; }
-    .toast.error { background: var(--danger); }
-    #setupPanel[hidden], #appPanel[hidden] { display: none !important; }
-    .preview { margin-top: 0.5rem; max-height: 200px; overflow: hidden; border-radius: 8px; border: 1px solid var(--border); }
-    .preview img { width: 100%; max-height: 200px; object-fit: cover; }
-    .checkbox { font-size: 0.85rem; color: var(--muted); display: flex; align-items: center; gap: 0.35rem; }
-    .share-box { font-size: 0.82rem; color: var(--muted); word-break: break-all; margin-top: 0.5rem; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px}
+    .page{max-width:720px;margin:0 auto;padding:2rem 1.25rem 4rem}
+    .header{text-align:center;margin-bottom:1rem}
+    .header h1{margin:0;font-size:1.75rem}
+    .subtitle{color:var(--muted);font-size:.95rem;margin:.5rem 0 0}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.25rem 1.5rem;margin-bottom:1.25rem}
+    .section-title{margin:0 0 1rem;font-size:1rem;font-weight:600}
+    .field{display:block;margin-bottom:.85rem}
+    .field>span{display:block;font-size:.85rem;color:var(--muted);margin-bottom:.3rem}
+    input[type=text],input[type=url],input[type=password],textarea{width:100%;font:inherit;padding:.6rem .85rem;border:1px solid var(--border);border-radius:8px;background:var(--bg)}
+    textarea{min-height:88px;resize:vertical}
+    .btn{font:inherit;font-weight:500;cursor:pointer;border:none;border-radius:8px;padding:.55rem 1rem}
+    .btn.primary{background:var(--accent);color:#fff}
+    .btn.primary:hover{background:var(--accent-hover)}
+    .btn.primary:disabled{opacity:.55;cursor:not-allowed}
+    .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+    .btn.ghost:hover{background:var(--bg);color:var(--text)}
+    .btn.small{padding:.35rem .75rem;font-size:.85rem}
+    .btn.danger{color:var(--danger);border-color:#f5c2c7}
+    .row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+    .status{font-size:.85rem;color:var(--muted)}.status.ok{color:var(--accent)}.status.err{color:var(--danger)}
+    .hint{font-size:.82rem;color:var(--muted);line-height:1.5;margin:0 0 1rem}
+    .hint.warn{background:#fff8e6;border:1px solid #ffe08a;border-radius:8px;padding:.65rem .85rem}
+    .posts{display:flex;flex-direction:column;gap:1rem}
+    .post{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.25rem 1.5rem}
+    .post-text{margin:0 0 .75rem;white-space:pre-wrap;word-break:break-word}
+    .post-link{color:var(--accent);word-break:break-all;display:inline-block;margin-bottom:.75rem}
+    .post-image{max-width:100%;max-height:360px;border-radius:8px;display:block;margin-bottom:.75rem}
+    .post-meta{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.5rem;padding-top:.75rem;border-top:1px solid var(--border);font-size:.8rem;color:var(--muted)}
+    .post-actions{display:flex;gap:.5rem}
+    .empty{text-align:center;color:var(--muted);padding:2rem}
+    .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:.65rem 1.25rem;border-radius:8px;z-index:99}
+    .toast.error{background:var(--danger)}
+    #setupPanel[hidden],#appPanel[hidden]{display:none!important}
+    .preview{margin-top:.5rem;max-height:200px;overflow:hidden;border-radius:8px;border:1px solid var(--border)}
+    .preview img{width:100%;max-height:200px;object-fit:cover}
+    .checkbox{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:.35rem}
+    .share-box{font-size:.82rem;color:var(--muted);word-break:break-all;margin-top:.5rem}
   </style>
 </head>
 <body>
   <div class="page">
     <header class="header">
       <h1>分享墙 · 云端版</h1>
-      <p class="subtitle">线上共享，远程发表、编辑与刷新同步</p>
+      <p class="subtitle">无需加载外部库，手机电脑远程同步</p>
     </header>
 
     <section id="setupPanel" class="card">
-      <h2 class="section-title">首次配置（仅需一次）</h2>
-      <p class="hint">
-        <strong>手机与电脑要看到相同内容，必须完成下方配置。</strong><br>
-        1. 打开 <a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a> 注册并新建项目<br>
-        2. SQL Editor 中运行仓库里的 <code>cloud/supabase-setup.sql</code><br>
-        3. Settings → API 复制 URL 与 anon 密钥，填到下方（或编辑 <code>cloud-config.js</code> 后 Push 到 GitHub）
-      </p>
-      <label class="field">
-        <span>Supabase 项目 URL</span>
-        <input type="text" id="cfgUrl" placeholder="https://xxxx.supabase.co" />
-      </label>
-      <label class="field">
-        <span>Publishable key（公钥，非 Secret）</span>
-        <input type="password" id="cfgKey" placeholder="sb_publishable_... 或 eyJ..." />
-      </label>
-      <label class="field">
-        <span>房间号（与他人共用须一致）</span>
-        <input type="text" id="cfgBoard" placeholder="例如 family2025" />
-      </label>
+      <h2 class="section-title">连接云端数据库</h2>
+      <p class="hint warn">国内网络若连接 Supabase 超时，请改用 <a href="分享墙-国内版.html"><strong>分享墙 · 国内版</strong></a>（LeanCloud，无需换线路）。</p>
+      <label class="field"><span>Supabase 项目 URL</span>
+        <input type="text" id="cfgUrl" placeholder="https://xxxx.supabase.co" /></label>
+      <label class="field"><span>Publishable key（公钥）</span>
+        <input type="password" id="cfgKey" placeholder="sb_publishable_... 或 eyJ..." /></label>
+      <label class="field"><span>房间号</span>
+        <input type="text" id="cfgBoard" placeholder="main" /></label>
       <div class="row">
         <button type="button" class="btn primary" id="connectBtn">保存并连接</button>
         <span class="status" id="setupStatus"></span>
@@ -134,476 +75,249 @@
 
     <div id="appPanel" hidden>
       <div class="card">
-        <div class="row" style="justify-content: space-between;">
+        <div class="row" style="justify-content:space-between">
           <span class="status ok" id="connInfo">已连接</span>
           <div class="row">
             <span class="status">房间：<strong id="boardLabel"></strong></span>
-            <button type="button" class="btn ghost small" id="shareBtn">复制分享链接</button>
+            <button type="button" class="btn ghost small" id="shareBtn">复制链接</button>
             <button type="button" class="btn ghost small" id="refreshBtn">刷新</button>
             <button type="button" class="btn ghost small" id="settingsBtn">改配置</button>
           </div>
         </div>
-        <p class="share-box" id="shareHint">把同一链接发给他人，即可远程查看与编辑（每 30 秒自动刷新）</p>
+        <p class="share-box">每 30 秒自动刷新 · 把同一链接发给他人即可协作</p>
       </div>
-
       <section class="card">
         <h2 class="section-title" id="formTitle">发表内容</h2>
         <form id="postForm">
           <input type="hidden" id="editId" />
-          <label class="field"><span>文字</span>
-            <textarea id="text" rows="4" placeholder="写下你想分享的内容…"></textarea>
-          </label>
-          <label class="field"><span>链接</span>
-            <input type="url" id="link" placeholder="https://example.com" />
-          </label>
+          <label class="field"><span>文字</span><textarea id="text" rows="4"></textarea></label>
+          <label class="field"><span>链接</span><input type="url" id="link" placeholder="https://..." /></label>
           <label class="field"><span>图片</span>
-            <input type="file" id="image" accept="image/jpeg,image/png,image/gif,image/webp" />
-            <label class="checkbox" id="removeImageWrap" hidden>
-              <input type="checkbox" id="removeImage" /> 移除当前图片
-            </label>
+            <input type="file" id="image" accept="image/*" />
+            <label class="checkbox" id="removeImageWrap" hidden><input type="checkbox" id="removeImage" /> 移除图片</label>
             <div class="preview" id="preview" hidden><img id="previewImg" alt="" /></div>
           </label>
           <div class="row">
             <button type="submit" class="btn primary" id="submitBtn">发布</button>
-            <button type="button" class="btn ghost" id="cancelEdit" hidden>取消编辑</button>
+            <button type="button" class="btn ghost" id="cancelEdit" hidden>取消</button>
           </div>
         </form>
       </section>
-
       <section>
-        <h2 class="section-title">全部内容（云端同步）</h2>
+        <h2 class="section-title">全部内容</h2>
         <div id="posts" class="posts"></div>
-        <p id="empty" class="empty" hidden>还没有内容，发表第一条吧。</p>
+        <p id="empty" class="empty" hidden>还没有内容</p>
       </section>
     </div>
   </div>
-
   <div class="toast" id="toast" hidden></div>
-
   <script src="cloud-config.js"></script>
   <script>
-    const CFG_KEY = "share-board-cloud-config";
+  (function () {
+    const CFG_KEY = "share-board-cloud-v2";
     const BUCKET = "share-board";
-
-    let supabase = null;
-    let boardId = "main";
-    let pendingFile = null;
-    let currentImagePath = "";
-    let toastTimer;
-    let refreshTimer = null;
-
+    let cfg = { url: "", key: "", board: "main" };
+    let pendingFile = null, currentImagePath = "", refreshTimer = null, toastTimer = null;
     const $ = (s) => document.querySelector(s);
-    const setupPanel = $("#setupPanel");
-    const appPanel = $("#appPanel");
-    const postsEl = $("#posts");
-    const emptyEl = $("#empty");
-    const toastEl = $("#toast");
 
     function showToast(msg, err) {
       clearTimeout(toastTimer);
-      toastEl.textContent = msg;
-      toastEl.className = "toast" + (err ? " error" : "");
-      toastEl.hidden = false;
-      toastTimer = setTimeout(() => { toastEl.hidden = true; }, 3000);
+      const t = $("#toast");
+      t.textContent = msg;
+      t.className = "toast" + (err ? " error" : "");
+      t.hidden = false;
+      toastTimer = setTimeout(() => { t.hidden = true; }, 3500);
     }
-
-    function loadConfig() {
-      try {
-        return JSON.parse(localStorage.getItem(CFG_KEY) || "null");
-      } catch {
-        return null;
-      }
-    }
-
-    function saveConfig(cfg) {
-      localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
-    }
-
-    function getBuiltInConfig() {
-      const b = window.SHARE_BOARD_CLOUD || {};
-      return {
-        url: (b.url || "").trim(),
-        key: (b.key || "").trim(),
-        board: (b.board || "main").trim() || "main",
-      };
-    }
-
-    function shareUrl() {
-      const u = new URL(location.href);
-      u.searchParams.set("board", boardId);
-      return u.toString();
-    }
-
-    function startAutoRefresh() {
-      if (refreshTimer) clearInterval(refreshTimer);
-      refreshTimer = setInterval(() => { renderPosts(); }, 30000);
-    }
-
-    function formatTime(iso) {
-      return new Date(iso).toLocaleString("zh-CN", {
-        month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
-      });
-    }
-
-    function publicImageUrl(path) {
-      if (!path || !supabase) return "";
-      const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-      return data.publicUrl;
-    }
-
-    function setSetupStatus(msg, isErr) {
+    function setStatus(msg, err) {
       const el = $("#setupStatus");
       el.textContent = msg;
-      el.className = "status" + (isErr ? " err" : " ok");
+      el.className = "status" + (err ? " err" : " ok");
     }
-
+    function headers(extra) {
+      return Object.assign({ apikey: cfg.key, Authorization: "Bearer " + cfg.key }, extra || {});
+    }
     function normalizeUrl(raw) {
-      let url = (raw || "").trim();
-      if (!url) return "";
-      if (!/^https?:\/\//i.test(url)) url = "https://" + url;
-      url = url.replace(/\/+$/, "");
-      if (!url.endsWith(".supabase.co")) {
-        throw new Error("URL 格式不对，应为 https://xxxxx.supabase.co");
-      }
-      return url;
+      let u = (raw || "").trim();
+      if (!u) return "";
+      if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+      return u.replace(/\/+$/, "");
     }
-
     function normalizeKey(raw) {
-      const key = (raw || "").trim();
-      if (!key) return "";
-      if (key.startsWith("sb_secret_")) {
-        throw new Error("请勿使用 Secret key，请改用 Publishable key");
-      }
-      return key;
+      const k = (raw || "").trim();
+      if (k.startsWith("sb_secret_")) throw new Error("请使用 Publishable key，不要用 Secret key");
+      return k;
     }
-
-    function getSupabaseClient() {
-      if (!window.supabase || !window.supabase.createClient) {
-        throw new Error("Supabase 库未加载，请刷新页面或检查网络");
-      }
-      return window.supabase;
-    }
-
-    function withTimeout(promise, ms, message) {
-      return Promise.race([
-        promise,
-        new Promise(function (_, reject) {
-          setTimeout(function () { reject(new Error(message)); }, ms);
-        }),
-      ]);
-    }
-
-    async function connect(cfg) {
-      const url = normalizeUrl(cfg.url);
-      const key = normalizeKey(cfg.key);
-      boardId = (cfg.board || "main").trim() || "main";
-
-      if (!url || !key) {
-        setSetupStatus("请填写 URL 和 Publishable key", true);
-        showToast("请填写 URL 和 Publishable key", true);
-        return false;
-      }
-
-      await window.__supabaseReady;
-      const lib = getSupabaseClient();
-      supabase = lib.createClient(url, key);
-
-      const { error } = await withTimeout(
-        supabase.from("share_posts").select("id").limit(1),
-        20000,
-        "连接超时：请检查网络能否访问 Supabase，或稍后重试"
-      );
-
-      if (error) {
-        setSetupStatus(error.message, true);
-        showToast("连接失败：" + error.message, true);
-        return false;
-      }
-
-      saveConfig({ url, key, board: boardId });
-      setSetupStatus("连接成功", false);
-      setupPanel.hidden = true;
-      appPanel.hidden = false;
-      $("#boardLabel").textContent = boardId;
-      $("#connInfo").textContent = "已连接云端 · 手机电脑数据同步";
-      startAutoRefresh();
-      await renderPosts();
-      showToast("连接成功");
-      return true;
-    }
-
-    async function renderPosts() {
-      if (!supabase) return;
-      const { data, error } = await supabase
-        .from("share_posts")
-        .select("*")
-        .eq("board_id", boardId)
-        .order("updated_at", { ascending: false });
-      if (error) {
-        showToast(error.message, true);
-        return;
-      }
-      postsEl.replaceChildren();
-      emptyEl.hidden = (data && data.length > 0);
-      for (const post of data || []) {
-        postsEl.appendChild(buildCard(post));
+    async function apiFetch(path, opts) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 20000);
+      try {
+        const res = await fetch(cfg.url + path, Object.assign({}, opts, { signal: ctrl.signal }));
+        clearTimeout(timer);
+        if (!res.ok) {
+          let msg = "HTTP " + res.status;
+          try { const j = await res.json(); msg = j.message || j.error || msg; } catch {}
+          throw new Error(msg);
+        }
+        if (res.status === 204) return null;
+        const text = await res.text();
+        return text ? JSON.parse(text) : null;
+      } catch (e) {
+        clearTimeout(timer);
+        if (e.name === "AbortError") throw new Error("连接超时：Supabase 在国内可能较慢，建议改用「国内版」");
+        if (e.message === "Failed to fetch") throw new Error("网络无法访问 Supabase，请改用「分享墙-国内版」");
+        throw e;
       }
     }
-
+    function imageUrl(path) {
+      return path ? cfg.url + "/storage/v1/object/public/" + BUCKET + "/" + encodeURI(path) : "";
+    }
+    async function testConn() {
+      await apiFetch("/rest/v1/share_posts?select=id&limit=1", { headers: headers() });
+    }
+    async function listPosts() {
+      const b = encodeURIComponent(cfg.board);
+      return apiFetch("/rest/v1/share_posts?board_id=eq." + b + "&order=updated_at.desc", { headers: headers() });
+    }
+    async function createPost(data) {
+      return apiFetch("/rest/v1/share_posts", {
+        method: "POST",
+        headers: headers({ "Content-Type": "application/json", Prefer: "return=representation" }),
+        body: JSON.stringify(data),
+      });
+    }
+    async function updatePost(id, data) {
+      return apiFetch("/rest/v1/share_posts?id=eq." + id, {
+        method: "PATCH",
+        headers: headers({ "Content-Type": "application/json", Prefer: "return=representation" }),
+        body: JSON.stringify(data),
+      });
+    }
+    async function removePost(id) {
+      await apiFetch("/rest/v1/share_posts?id=eq." + id, { method: "DELETE", headers: headers() });
+    }
+    async function uploadFile(file) {
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+      const path = cfg.board + "/" + Date.now() + "-" + Math.random().toString(36).slice(2, 8) + "." + ext;
+      await apiFetch("/storage/v1/object/" + BUCKET + "/" + path, {
+        method: "POST",
+        headers: headers({ "Content-Type": file.type || "application/octet-stream" }),
+        body: file,
+      });
+      return path;
+    }
+    async function deleteFile(path) {
+      if (!path) return;
+      try { await apiFetch("/storage/v1/object/" + BUCKET + "/" + path, { method: "DELETE", headers: headers() }); } catch {}
+    }
+    function formatTime(iso) {
+      return new Date(iso).toLocaleString("zh-CN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    }
     function buildCard(post) {
       const card = document.createElement("article");
       card.className = "post";
-      if (post.text) {
-        const p = document.createElement("p");
-        p.className = "post-text";
-        p.textContent = post.text;
-        card.appendChild(p);
-      }
-      if (post.link) {
-        const a = document.createElement("a");
-        a.className = "post-link";
-        a.href = post.link;
-        a.target = "_blank";
-        a.rel = "noopener noreferrer";
-        a.textContent = post.link;
-        card.appendChild(a);
-      }
-      if (post.image_path) {
-        const img = document.createElement("img");
-        img.className = "post-image";
-        img.src = publicImageUrl(post.image_path);
-        img.alt = "分享图片";
-        img.loading = "lazy";
-        card.appendChild(img);
-      }
-      const meta = document.createElement("div");
-      meta.className = "post-meta";
+      if (post.text) { const p = document.createElement("p"); p.className = "post-text"; p.textContent = post.text; card.appendChild(p); }
+      if (post.link) { const a = document.createElement("a"); a.className = "post-link"; a.href = post.link; a.target = "_blank"; a.rel = "noopener"; a.textContent = post.link; card.appendChild(a); }
+      if (post.image_path) { const img = document.createElement("img"); img.className = "post-image"; img.src = imageUrl(post.image_path); img.alt = ""; card.appendChild(img); }
+      const meta = document.createElement("div"); meta.className = "post-meta";
       const time = document.createElement("time");
-      const edited = post.updated_at !== post.created_at;
-      time.textContent = formatTime(post.updated_at) + (edited ? " · 已编辑" : "");
+      time.textContent = formatTime(post.updated_at) + (post.updated_at !== post.created_at ? " · 已编辑" : "");
       meta.appendChild(time);
-      const actions = document.createElement("div");
-      actions.className = "post-actions";
-      const editB = document.createElement("button");
-      editB.type = "button";
-      editB.className = "btn ghost small";
-      editB.textContent = "编辑";
-      editB.onclick = () => startEdit(post);
-      const delB = document.createElement("button");
-      delB.type = "button";
-      delB.className = "btn ghost small danger";
-      delB.textContent = "删除";
-      delB.onclick = () => deletePost(post);
-      actions.append(editB, delB);
-      meta.appendChild(actions);
-      card.appendChild(meta);
+      const actions = document.createElement("div"); actions.className = "post-actions";
+      const eb = document.createElement("button"); eb.type = "button"; eb.className = "btn ghost small"; eb.textContent = "编辑";
+      eb.onclick = () => startEdit(post);
+      const db = document.createElement("button"); db.type = "button"; db.className = "btn ghost small danger"; db.textContent = "删除";
+      db.onclick = () => deletePost(post);
+      actions.append(eb, db); meta.appendChild(actions); card.appendChild(meta);
       return card;
     }
-
-    async function uploadImage(file) {
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z]/g, "") || "jpg";
-      const path = boardId + "/" + Date.now() + "-" + Math.random().toString(36).slice(2, 8) + "." + ext;
-      const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
-        cacheControl: "3600",
-        upsert: false,
-      });
-      if (error) throw error;
-      return path;
+    async function render() {
+      const data = await listPosts();
+      const el = $("#posts");
+      el.replaceChildren();
+      $("#empty").hidden = data && data.length > 0;
+      (data || []).forEach((p) => el.appendChild(buildCard(p)));
     }
-
-    async function removeStoragePath(path) {
-      if (!path) return;
-      await supabase.storage.from(BUCKET).remove([path]);
-    }
-
     function resetForm() {
-      $("#editId").value = "";
-      $("#postForm").reset();
-      pendingFile = null;
-      currentImagePath = "";
-      $("#preview").hidden = true;
-      $("#removeImageWrap").hidden = true;
-      $("#removeImage").checked = false;
-      $("#formTitle").textContent = "发表内容";
-      $("#submitBtn").textContent = "发布";
-      $("#cancelEdit").hidden = true;
+      $("#editId").value = ""; $("#postForm").reset(); pendingFile = null; currentImagePath = "";
+      $("#preview").hidden = true; $("#removeImageWrap").hidden = true; $("#removeImage").checked = false;
+      $("#formTitle").textContent = "发表内容"; $("#submitBtn").textContent = "发布"; $("#cancelEdit").hidden = true;
     }
-
     function startEdit(post) {
-      $("#editId").value = post.id;
-      $("#text").value = post.text || "";
-      $("#link").value = post.link || "";
-      pendingFile = null;
-      currentImagePath = post.image_path || "";
-      $("#image").value = "";
-      $("#removeImage").checked = false;
-      if (currentImagePath) {
-        $("#previewImg").src = publicImageUrl(currentImagePath);
-        $("#preview").hidden = false;
-        $("#removeImageWrap").hidden = false;
-      } else {
-        $("#preview").hidden = true;
-        $("#removeImageWrap").hidden = true;
-      }
-      $("#formTitle").textContent = "编辑内容";
-      $("#submitBtn").textContent = "保存";
-      $("#cancelEdit").hidden = false;
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      $("#editId").value = post.id; $("#text").value = post.text || ""; $("#link").value = post.link || "";
+      pendingFile = null; currentImagePath = post.image_path || ""; $("#image").value = "";
+      if (currentImagePath) { $("#previewImg").src = imageUrl(currentImagePath); $("#preview").hidden = false; $("#removeImageWrap").hidden = false; }
+      else { $("#preview").hidden = true; $("#removeImageWrap").hidden = true; }
+      $("#formTitle").textContent = "编辑内容"; $("#submitBtn").textContent = "保存"; $("#cancelEdit").hidden = false;
     }
-
     async function deletePost(post) {
-      if (!confirm("确定删除这条内容吗？")) return;
-      if (post.image_path) await removeStoragePath(post.image_path);
-      const { error } = await supabase.from("share_posts").delete().eq("id", post.id);
-      if (error) {
-        showToast(error.message, true);
-        return;
-      }
-      showToast("已删除");
+      if (!confirm("确定删除？")) return;
+      if (post.image_path) await deleteFile(post.image_path);
+      await removePost(post.id);
       if ($("#editId").value === post.id) resetForm();
-      await renderPosts();
+      await render(); showToast("已删除");
     }
-
-    $("#image").addEventListener("change", () => {
-      const file = $("#image").files[0];
-      pendingFile = file || null;
-      if (file) {
-        $("#previewImg").src = URL.createObjectURL(file);
-        $("#preview").hidden = false;
-        $("#removeImage").checked = false;
-      }
-    });
-
-    $("#cancelEdit").addEventListener("click", resetForm);
-    $("#refreshBtn").addEventListener("click", () => renderPosts());
-    $("#shareBtn").addEventListener("click", async () => {
-      const link = shareUrl();
-      try {
-        await navigator.clipboard.writeText(link);
-        showToast("分享链接已复制");
-      } catch {
-        prompt("复制此链接发给他人：", link);
-      }
-    });
-    $("#settingsBtn").addEventListener("click", () => {
-      appPanel.hidden = true;
-      setupPanel.hidden = false;
-      const c = loadConfig();
-      if (c) {
-        $("#cfgUrl").value = c.url || "";
-        $("#cfgKey").value = c.key || "";
-        $("#cfgBoard").value = c.board || "";
-      }
-    });
-
-    $("#connectBtn").addEventListener("click", async () => {
-      const btn = $("#connectBtn");
-      btn.disabled = true;
-      btn.classList.add("loading");
-      btn.dataset.label = btn.textContent;
-      btn.textContent = "连接中…";
-      setSetupStatus("正在连接…", false);
-      try {
-        await connect({
-          url: $("#cfgUrl").value,
-          key: $("#cfgKey").value,
-          board: $("#cfgBoard").value,
-        });
-      } catch (err) {
-        setSetupStatus(err.message || "连接失败", true);
-        showToast(err.message || "连接失败", true);
-      } finally {
-        btn.disabled = false;
-        btn.classList.remove("loading");
-        btn.textContent = btn.dataset.label || "保存并连接";
-      }
-    });
-
-    $("#postForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      if (!supabase) return;
-      const text = $("#text").value.trim();
-      const link = $("#link").value.trim();
-      const editIdVal = $("#editId").value;
-      if (!text && !link && !pendingFile && !currentImagePath && !$("#removeImage").checked) {
-        showToast("请至少填写一项", true);
-        return;
-      }
-      $("#submitBtn").disabled = true;
-      try {
-        let imagePath = currentImagePath;
-        if ($("#removeImage").checked) {
-          if (currentImagePath) await removeStoragePath(currentImagePath);
-          imagePath = "";
-        }
-        if (pendingFile) {
-          if (currentImagePath) await removeStoragePath(currentImagePath);
-          imagePath = await uploadImage(pendingFile);
-        }
-        const ts = new Date().toISOString();
-        if (editIdVal) {
-          const { error } = await supabase.from("share_posts").update({
-            text, link, image_path: imagePath, updated_at: ts,
-          }).eq("id", editIdVal);
-          if (error) throw error;
-          showToast("已保存");
-        } else {
-          const { error } = await supabase.from("share_posts").insert({
-            board_id: boardId, text, link, image_path: imagePath,
-            created_at: ts, updated_at: ts,
-          });
-          if (error) throw error;
-          showToast("发布成功");
-        }
-        resetForm();
-        await renderPosts();
-      } catch (err) {
-        showToast(err.message || "操作失败", true);
-      } finally {
-        $("#submitBtn").disabled = false;
-      }
-    });
-
-    (async function init() {
-      try {
-        await window.__supabaseReady;
-      } catch (err) {
-        setSetupStatus(err.message, true);
-        showToast(err.message, true);
-        setupPanel.hidden = false;
-        appPanel.hidden = true;
-        return;
-      }
-
-      const params = new URLSearchParams(location.search);
-      const builtIn = getBuiltInConfig();
-      const saved = loadConfig();
-      const url = (params.get("url") || saved?.url || builtIn.url || "").trim();
-      const key = (saved?.key || builtIn.key || "").trim();
-      const board = (params.get("board") || saved?.board || builtIn.board || "main").trim() || "main";
-
-      $("#cfgUrl").value = url;
-      $("#cfgKey").value = key;
-      $("#cfgBoard").value = board;
-
-      if (url && key) {
-        setSetupStatus("正在自动连接…", false);
-        try {
-          const ok = await connect({ url, key, board });
-          if (!ok) {
-            setupPanel.hidden = false;
-            appPanel.hidden = true;
-          }
-        } catch (err) {
-          setSetupStatus(err.message || "自动连接失败", true);
-          setupPanel.hidden = false;
-          appPanel.hidden = true;
-        }
-      } else {
-        setupPanel.hidden = false;
-        appPanel.hidden = true;
-      }
-    })();
+    async function connect(c) {
+      cfg.url = normalizeUrl(c.url);
+      cfg.key = normalizeKey(c.key);
+      cfg.board = (c.board || "main").trim() || "main";
+      if (!cfg.url || !cfg.key) { setStatus("请填写 URL 和密钥", true); showToast("请填写 URL 和密钥", true); return false; }
+      await testConn();
+      localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+      $("#setupPanel").hidden = true; $("#appPanel").hidden = false;
+      $("#boardLabel").textContent = cfg.board;
+      $("#connInfo").textContent = "已连接云端";
+      if (refreshTimer) clearInterval(refreshTimer);
+      refreshTimer = setInterval(() => render().catch(() => {}), 30000);
+      await render();
+      showToast("连接成功");
+      return true;
+    }
+  $("#connectBtn").onclick = async () => {
+    const btn = $("#connectBtn"); btn.disabled = true; setStatus("连接中…", false);
+    try { await connect({ url: $("#cfgUrl").value, key: $("#cfgKey").value, board: $("#cfgBoard").value }); }
+    catch (e) { setStatus(e.message, true); showToast(e.message, true); }
+    finally { btn.disabled = false; }
+  };
+  $("#refreshBtn").onclick = () => render().catch((e) => showToast(e.message, true));
+  $("#shareBtn").onclick = async () => {
+    const u = new URL(location.href); u.searchParams.set("board", cfg.board);
+    try { await navigator.clipboard.writeText(u.toString()); showToast("链接已复制"); }
+    catch { prompt("复制链接：", u.toString()); }
+  };
+  $("#settingsBtn").onclick = () => { $("#appPanel").hidden = true; $("#setupPanel").hidden = false; };
+  $("#cancelEdit").onclick = resetForm;
+  $("#image").onchange = () => { const f = $("#image").files[0]; pendingFile = f || null; if (f) { $("#previewImg").src = URL.createObjectURL(f); $("#preview").hidden = false; } };
+  $("#postForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const text = $("#text").value.trim(), link = $("#link").value.trim(), id = $("#editId").value;
+    if (!text && !link && !pendingFile && !currentImagePath && !$("#removeImage").checked) { showToast("请至少填一项", true); return; }
+    $("#submitBtn").disabled = true;
+    try {
+      let imagePath = currentImagePath;
+      if ($("#removeImage").checked) { await deleteFile(currentImagePath); imagePath = ""; }
+      if (pendingFile) { await deleteFile(currentImagePath); imagePath = await uploadFile(pendingFile); }
+      const ts = new Date().toISOString();
+      if (id) { await updatePost(id, { text, link, image_path: imagePath, updated_at: ts }); showToast("已保存"); }
+      else { await createPost({ board_id: cfg.board, text, link, image_path: imagePath, created_at: ts, updated_at: ts }); showToast("发布成功"); }
+      resetForm(); await render();
+    } catch (err) { showToast(err.message || "失败", true); }
+    finally { $("#submitBtn").disabled = false; }
+  };
+  (async function init() {
+    const builtIn = window.SHARE_BOARD_CLOUD || {};
+    const saved = JSON.parse(localStorage.getItem(CFG_KEY) || "null");
+    const params = new URLSearchParams(location.search);
+    const url = params.get("url") || saved?.url || builtIn.url || "";
+    const key = saved?.key || builtIn.key || "";
+    const board = params.get("board") || saved?.board || builtIn.board || "main";
+    $("#cfgUrl").value = url; $("#cfgKey").value = key; $("#cfgBoard").value = board;
+    if (url && key) {
+      setStatus("自动连接中…", false);
+      try { const ok = await connect({ url, key, board }); if (!ok) { $("#setupPanel").hidden = false; $("#appPanel").hidden = true; } }
+      catch (e) { setStatus(e.message, true); $("#setupPanel").hidden = false; $("#appPanel").hidden = true; }
+    }
+  })();
+  })();
   </script>
 </body>
 </html>

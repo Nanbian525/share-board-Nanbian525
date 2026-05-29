@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>分享墙 · 国内版</title>
+  <style>
+    :root{--bg:#f5f4f1;--card:#fff;--text:#1a1a1a;--muted:#6b6b6b;--border:#e8e6e1;--accent:#2d6a4f;--accent-hover:#1b4332;--danger:#c1121f;--shadow:0 1px 3px rgba(0,0,0,.06);--radius:12px}
+    *{box-sizing:border-box}body{margin:0;font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px}
+    .page{max-width:720px;margin:0 auto;padding:2rem 1.25rem 4rem}.header{text-align:center;margin-bottom:1rem}.header h1{margin:0;font-size:1.75rem}.subtitle{color:var(--muted);font-size:.95rem}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.25rem 1.5rem;margin-bottom:1.25rem}
+    .section-title{margin:0 0 1rem;font-size:1rem;font-weight:600}.field{display:block;margin-bottom:.85rem}.field>span{display:block;font-size:.85rem;color:var(--muted);margin-bottom:.3rem}
+    input,textarea{width:100%;font:inherit;padding:.6rem .85rem;border:1px solid var(--border);border-radius:8px;background:var(--bg)}textarea{min-height:88px;resize:vertical}
+    .btn{font:inherit;font-weight:500;cursor:pointer;border:none;border-radius:8px;padding:.55rem 1rem}.btn.primary{background:var(--accent);color:#fff}.btn.primary:disabled{opacity:.55}
+    .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}.btn.small{padding:.35rem .75rem;font-size:.85rem}.btn.danger{color:var(--danger);border-color:#f5c2c7}
+    .row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}.status{font-size:.85rem;color:var(--muted)}.status.ok{color:var(--accent)}.status.err{color:var(--danger)}
+    .hint{font-size:.82rem;color:var(--muted);line-height:1.5;margin:0 0 1rem}.hint.ok{background:#eef7f1;border:1px solid #b7dfc9;border-radius:8px;padding:.65rem .85rem;color:#1b4332}
+    .posts{display:flex;flex-direction:column;gap:1rem}.post{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem}
+    .post-text{margin:0 0 .75rem;white-space:pre-wrap;word-break:break-word}.post-link{color:var(--accent);word-break:break-all;display:block;margin-bottom:.75rem}
+    .post-image{max-width:100%;max-height:360px;border-radius:8px;display:block;margin-bottom:.75rem}
+    .post-meta{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.5rem;padding-top:.75rem;border-top:1px solid var(--border);font-size:.8rem;color:var(--muted)}
+    .post-actions{display:flex;gap:.5rem}.empty{text-align:center;color:var(--muted);padding:2rem}
+    .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:.65rem 1.25rem;border-radius:8px;z-index:99}.toast.error{background:var(--danger)}
+    #setupPanel[hidden],#appPanel[hidden]{display:none!important}.preview{margin-top:.5rem;max-height:200px;overflow:hidden;border-radius:8px;border:1px solid var(--border)}.preview img{width:100%;max-height:200px;object-fit:cover}
+    .checkbox{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:.35rem}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <h1>分享墙 · 国内版</h1>
+      <p class="subtitle">LeanCloud 中国节点 · 无需 VPN · 手机电脑同步</p>
+    </header>
+    <section id="setupPanel" class="card">
+      <h2 class="section-title">连接国内云端</h2>
+      <p class="hint ok">✅ 本版<strong>不加载任何国外库</strong>，数据存在国内服务器，适合国内网络直接使用。</p>
+      <p class="hint">配置步骤见仓库 <strong>国内版配置说明.md</strong>（注册 LeanCloud → 建 SharePost 表 → 填密钥）</p>
+      <label class="field"><span>AppID</span><input type="text" id="cfgAppId" /></label>
+      <label class="field"><span>AppKey（客户端，非 Master Key）</span><input type="password" id="cfgAppKey" /></label>
+      <label class="field"><span>服务器地址（.api.lncld.cn）</span><input type="text" id="cfgServer" placeholder="https://xxxxx.api.lncld.cn" /></label>
+      <label class="field"><span>房间号</span><input type="text" id="cfgBoard" placeholder="main" /></label>
+      <div class="row"><button type="button" class="btn primary" id="connectBtn">保存并连接</button><span class="status" id="setupStatus"></span></div>
+    </section>
+    <div id="appPanel" hidden>
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <span class="status ok">已连接国内云端</span>
+          <div class="row">
+            <span class="status">房间：<strong id="boardLabel"></strong></span>
+            <button type="button" class="btn ghost small" id="shareBtn">复制链接</button>
+            <button type="button" class="btn ghost small" id="refreshBtn">刷新</button>
+            <button type="button" class="btn ghost small" id="settingsBtn">改配置</button>
+          </div>
+        </div>
+      </div>
+      <section class="card">
+        <h2 class="section-title" id="formTitle">发表内容</h2>
+        <form id="postForm">
+          <input type="hidden" id="editId" />
+          <label class="field"><span>文字</span><textarea id="text" rows="4"></textarea></label>
+          <label class="field"><span>链接</span><input type="url" id="link" /></label>
+          <label class="field"><span>图片</span>
+            <input type="file" id="image" accept="image/*" />
+            <label class="checkbox" id="removeImageWrap" hidden><input type="checkbox" id="removeImage" /> 移除图片</label>
+            <div class="preview" id="preview" hidden><img id="previewImg" alt="" /></div>
+          </label>
+          <div class="row"><button type="submit" class="btn primary" id="submitBtn">发布</button><button type="button" class="btn ghost" id="cancelEdit" hidden>取消</button></div>
+        </form>
+      </section>
+      <section><h2 class="section-title">全部内容</h2><div id="posts" class="posts"></div><p id="empty" class="empty" hidden>还没有内容</p></section>
+    </div>
+  </div>
+  <div class="toast" id="toast" hidden></div>
+  <script src="leancloud-config.js"></script>
+  <script>
+  (function () {
+    const CFG_KEY = "share-board-lc-v1";
+    const CLASS = "SharePost";
+    let cfg = { appId: "", appKey: "", serverURL: "", board: "main" };
+    let pendingFile = null, currentImageUrl = "", refreshTimer = null, toastTimer = null;
+    const $ = (s) => document.querySelector(s);
+
+    function showToast(msg, err) {
+      clearTimeout(toastTimer);
+      const t = $("#toast"); t.textContent = msg; t.className = "toast" + (err ? " error" : ""); t.hidden = false;
+      toastTimer = setTimeout(() => { t.hidden = true; }, 3500);
+    }
+    function setStatus(msg, err) { const el = $("#setupStatus"); el.textContent = msg; el.className = "status" + (err ? " err" : " ok"); }
+    function base() { return cfg.serverURL.replace(/\/+$/, "") + "/1.1"; }
+    function headers(extra) {
+      return Object.assign({ "X-LC-Id": cfg.appId, "X-LC-Key": cfg.appKey }, extra || {});
+    }
+    async function lcFetch(path, opts) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 20000);
+      try {
+        const res = await fetch(base() + path, Object.assign({}, opts, { signal: ctrl.signal }));
+        clearTimeout(timer);
+        const text = await res.text();
+        let data = null;
+        try { data = text ? JSON.parse(text) : null; } catch {}
+        if (!res.ok) throw new Error((data && data.error) || "HTTP " + res.status);
+        return data;
+      } catch (e) {
+        clearTimeout(timer);
+        if (e.name === "AbortError") throw new Error("连接超时，请检查服务器地址是否为 .api.lncld.cn");
+        if (e.message === "Failed to fetch") throw new Error("网络请求失败，请检查 AppID / AppKey / 服务器地址");
+        throw e;
+      }
+    }
+    async function testConn() {
+      const where = encodeURIComponent(JSON.stringify({ boardId: cfg.board }));
+      await lcFetch("/classes/" + CLASS + "?where=" + where + "&limit=1", { headers: headers() });
+    }
+    async function listPosts() {
+      const where = encodeURIComponent(JSON.stringify({ boardId: cfg.board }));
+      const data = await lcFetch("/classes/" + CLASS + "?where=" + where + "&order=-updatedAt&limit=200", { headers: headers() });
+      return data.results || [];
+    }
+    async function createPost(body) {
+      return lcFetch("/classes/" + CLASS, {
+        method: "POST", headers: headers({ "Content-Type": "application/json" }), body: JSON.stringify(body),
+      });
+    }
+    async function updatePost(id, body) {
+      return lcFetch("/classes/" + CLASS + "/" + id, {
+        method: "PUT", headers: headers({ "Content-Type": "application/json" }), body: JSON.stringify(body),
+      });
+    }
+    async function removePost(id) {
+      await lcFetch("/classes/" + CLASS + "/" + id, { method: "DELETE", headers: headers() });
+    }
+    async function uploadFile(file) {
+      const name = Date.now() + "-" + Math.random().toString(36).slice(2, 8) + "." + ((file.name.split(".").pop() || "jpg").toLowerCase());
+      const data = await lcFetch("/files/" + encodeURIComponent(name), {
+        method: "POST",
+        headers: headers({ "Content-Type": file.type || "application/octet-stream" }),
+        body: file,
+      });
+      return data.url;
+    }
+    function formatTime(iso) {
+      return new Date(iso).toLocaleString("zh-CN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    }
+    function buildCard(post) {
+      const card = document.createElement("article"); card.className = "post";
+      if (post.text) { const p = document.createElement("p"); p.className = "post-text"; p.textContent = post.text; card.appendChild(p); }
+      if (post.link) { const a = document.createElement("a"); a.className = "post-link"; a.href = post.link; a.target = "_blank"; a.rel = "noopener"; a.textContent = post.link; card.appendChild(a); }
+      if (post.imageUrl) { const img = document.createElement("img"); img.className = "post-image"; img.src = post.imageUrl; card.appendChild(img); }
+      const meta = document.createElement("div"); meta.className = "post-meta";
+      const time = document.createElement("time");
+      time.textContent = formatTime(post.updatedAt || post.createdAt);
+      meta.appendChild(time);
+      const actions = document.createElement("div"); actions.className = "post-actions";
+      const eb = document.createElement("button"); eb.type = "button"; eb.className = "btn ghost small"; eb.textContent = "编辑"; eb.onclick = () => startEdit(post);
+      const db = document.createElement("button"); db.type = "button"; db.className = "btn ghost small danger"; db.textContent = "删除"; db.onclick = () => deletePost(post);
+      actions.append(eb, db); meta.appendChild(actions); card.appendChild(meta);
+      return card;
+    }
+    async function render() {
+      const data = await listPosts();
+      const el = $("#posts"); el.replaceChildren();
+      $("#empty").hidden = data.length > 0;
+      data.forEach((p) => el.appendChild(buildCard(p)));
+    }
+    function resetForm() {
+      $("#editId").value = ""; $("#postForm").reset(); pendingFile = null; currentImageUrl = "";
+      $("#preview").hidden = true; $("#removeImageWrap").hidden = true; $("#removeImage").checked = false;
+      $("#formTitle").textContent = "发表内容"; $("#submitBtn").textContent = "发布"; $("#cancelEdit").hidden = true;
+    }
+    function startEdit(post) {
+      $("#editId").value = post.objectId; $("#text").value = post.text || ""; $("#link").value = post.link || "";
+      pendingFile = null; currentImageUrl = post.imageUrl || "";
+      if (currentImageUrl) { $("#previewImg").src = currentImageUrl; $("#preview").hidden = false; $("#removeImageWrap").hidden = false; }
+      else { $("#preview").hidden = true; $("#removeImageWrap").hidden = true; }
+      $("#formTitle").textContent = "编辑内容"; $("#submitBtn").textContent = "保存"; $("#cancelEdit").hidden = false;
+    }
+    async function deletePost(post) {
+      if (!confirm("确定删除？")) return;
+      await removePost(post.objectId);
+      if ($("#editId").value === post.objectId) resetForm();
+      await render(); showToast("已删除");
+    }
+    async function connect(c) {
+      cfg.appId = (c.appId || "").trim();
+      cfg.appKey = (c.appKey || "").trim();
+      cfg.serverURL = (c.serverURL || "").trim().replace(/\/+$/, "");
+      cfg.board = (c.board || "main").trim() || "main";
+      if (!cfg.appId || !cfg.appKey || !cfg.serverURL) { setStatus("请填写完整配置", true); return false; }
+      if (!cfg.serverURL.includes("lncld")) { setStatus("服务器地址应为 .api.lncld.cn", true); return false; }
+      await testConn();
+      localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+      $("#setupPanel").hidden = true; $("#appPanel").hidden = false; $("#boardLabel").textContent = cfg.board;
+      if (refreshTimer) clearInterval(refreshTimer);
+      refreshTimer = setInterval(() => render().catch(() => {}), 30000);
+      await render(); showToast("连接成功"); return true;
+    }
+    $("#connectBtn").onclick = async () => {
+      $("#connectBtn").disabled = true; setStatus("连接中…", false);
+      try { await connect({ appId: $("#cfgAppId").value, appKey: $("#cfgAppKey").value, serverURL: $("#cfgServer").value, board: $("#cfgBoard").value }); }
+      catch (e) { setStatus(e.message, true); showToast(e.message, true); }
+      finally { $("#connectBtn").disabled = false; }
+    };
+    $("#refreshBtn").onclick = () => render().catch((e) => showToast(e.message, true));
+    $("#shareBtn").onclick = async () => {
+      const u = new URL(location.href); u.searchParams.set("board", cfg.board);
+      try { await navigator.clipboard.writeText(u.toString()); showToast("链接已复制"); } catch { prompt("复制链接：", u.toString()); }
+    };
+    $("#settingsBtn").onclick = () => { $("#appPanel").hidden = true; $("#setupPanel").hidden = false; };
+    $("#cancelEdit").onclick = resetForm;
+    $("#image").onchange = () => { const f = $("#image").files[0]; pendingFile = f || null; if (f) { $("#previewImg").src = URL.createObjectURL(f); $("#preview").hidden = false; } };
+    $("#postForm").onsubmit = async (e) => {
+      e.preventDefault();
+      const text = $("#text").value.trim(), link = $("#link").value.trim(), id = $("#editId").value;
+      if (!text && !link && !pendingFile && !currentImageUrl && !$("#removeImage").checked) { showToast("请至少填一项", true); return; }
+      $("#submitBtn").disabled = true;
+      try {
+        let imageUrl = currentImageUrl;
+        if ($("#removeImage").checked) imageUrl = "";
+        if (pendingFile) imageUrl = await uploadFile(pendingFile);
+        const body = { boardId: cfg.board, text, link, imageUrl };
+        if (id) { await updatePost(id, body); showToast("已保存"); }
+        else { await createPost(body); showToast("发布成功"); }
+        resetForm(); await render();
+      } catch (err) { showToast(err.message || "失败", true); }
+      finally { $("#submitBtn").disabled = false; }
+    };
+    (async function init() {
+      const builtIn = window.SHARE_BOARD_LC || {};
+      const saved = JSON.parse(localStorage.getItem(CFG_KEY) || "null");
+      const params = new URLSearchParams(location.search);
+      const appId = saved?.appId || builtIn.appId || "";
+      const appKey = saved?.appKey || builtIn.appKey || "";
+      const serverURL = saved?.serverURL || builtIn.serverURL || "";
+      const board = params.get("board") || saved?.board || builtIn.board || "main";
+      $("#cfgAppId").value = appId; $("#cfgAppKey").value = appKey; $("#cfgServer").value = serverURL; $("#cfgBoard").value = board;
+      if (appId && appKey && serverURL) {
+        setStatus("自动连接中…", false);
+        try { await connect({ appId, appKey, serverURL, board }); }
+        catch (e) { setStatus(e.message, true); $("#setupPanel").hidden = false; $("#appPanel").hidden = true; }
+      }
+    })();
+  })();
+  </script>
+</body>
+</html>
