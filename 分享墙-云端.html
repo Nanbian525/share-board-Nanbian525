@@ -4,7 +4,35 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>分享墙 · 云端协作版</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.__supabaseReady = new Promise(function (resolve, reject) {
+      var urls = [
+        "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js",
+        "https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js",
+        "https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.49.1/umd/supabase.min.js"
+      ];
+      var i = 0;
+      function tryNext() {
+        if (window.supabase && window.supabase.createClient) {
+          resolve();
+          return;
+        }
+        if (i >= urls.length) {
+          reject(new Error("无法加载 Supabase 库，请检查网络或换浏览器重试"));
+          return;
+        }
+        var s = document.createElement("script");
+        s.src = urls[i++];
+        s.onload = function () {
+          if (window.supabase && window.supabase.createClient) resolve();
+          else tryNext();
+        };
+        s.onerror = tryNext;
+        document.head.appendChild(s);
+      }
+      tryNext();
+    });
+  </script>
   <style>
     :root {
       --bg: #f5f4f1; --card: #fff; --text: #1a1a1a; --muted: #6b6b6b;
@@ -34,6 +62,14 @@
     .btn.primary { background: var(--accent); color: #fff; }
     .btn.primary:hover { background: var(--accent-hover); }
     .btn.primary:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn.loading { position: relative; color: transparent !important; }
+    .btn.loading::after {
+      content: ""; position: absolute; left: 50%; top: 50%;
+      width: 1rem; height: 1rem; margin: -0.5rem 0 0 -0.5rem;
+      border: 2px solid rgba(255,255,255,.35); border-top-color: #fff;
+      border-radius: 50%; animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
     .btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
     .btn.ghost:hover { background: var(--bg); color: var(--text); }
     .btn.small { padding: 0.35rem 0.75rem; font-size: 0.85rem; }
@@ -83,8 +119,8 @@
         <input type="text" id="cfgUrl" placeholder="https://xxxx.supabase.co" />
       </label>
       <label class="field">
-        <span>anon 公钥（Settings → API）</span>
-        <input type="password" id="cfgKey" placeholder="eyJhbGciOi..." />
+        <span>Publishable key（公钥，非 Secret）</span>
+        <input type="password" id="cfgKey" placeholder="sb_publishable_... 或 eyJ..." />
       </label>
       <label class="field">
         <span>房间号（与他人共用须一致）</span>
@@ -215,31 +251,84 @@
       return data.publicUrl;
     }
 
+    function setSetupStatus(msg, isErr) {
+      const el = $("#setupStatus");
+      el.textContent = msg;
+      el.className = "status" + (isErr ? " err" : " ok");
+    }
+
+    function normalizeUrl(raw) {
+      let url = (raw || "").trim();
+      if (!url) return "";
+      if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+      url = url.replace(/\/+$/, "");
+      if (!url.endsWith(".supabase.co")) {
+        throw new Error("URL 格式不对，应为 https://xxxxx.supabase.co");
+      }
+      return url;
+    }
+
+    function normalizeKey(raw) {
+      const key = (raw || "").trim();
+      if (!key) return "";
+      if (key.startsWith("sb_secret_")) {
+        throw new Error("请勿使用 Secret key，请改用 Publishable key");
+      }
+      return key;
+    }
+
+    function getSupabaseClient() {
+      if (!window.supabase || !window.supabase.createClient) {
+        throw new Error("Supabase 库未加载，请刷新页面或检查网络");
+      }
+      return window.supabase;
+    }
+
+    function withTimeout(promise, ms, message) {
+      return Promise.race([
+        promise,
+        new Promise(function (_, reject) {
+          setTimeout(function () { reject(new Error(message)); }, ms);
+        }),
+      ]);
+    }
+
     async function connect(cfg) {
-      const url = (cfg.url || "").trim();
-      const key = (cfg.key || "").trim();
+      const url = normalizeUrl(cfg.url);
+      const key = normalizeKey(cfg.key);
       boardId = (cfg.board || "main").trim() || "main";
+
       if (!url || !key) {
-        showToast("请填写 URL 和 anon 密钥", true);
+        setSetupStatus("请填写 URL 和 Publishable key", true);
+        showToast("请填写 URL 和 Publishable key", true);
         return false;
       }
-      supabase = window.supabase.createClient(url, key);
-      const { error } = await supabase.from("share_posts").select("id").limit(1);
+
+      await window.__supabaseReady;
+      const lib = getSupabaseClient();
+      supabase = lib.createClient(url, key);
+
+      const { error } = await withTimeout(
+        supabase.from("share_posts").select("id").limit(1),
+        20000,
+        "连接超时：请检查网络能否访问 Supabase，或稍后重试"
+      );
+
       if (error) {
-        $("#setupStatus").textContent = error.message;
-        $("#setupStatus").className = "status err";
+        setSetupStatus(error.message, true);
         showToast("连接失败：" + error.message, true);
         return false;
       }
+
       saveConfig({ url, key, board: boardId });
-      $("#setupStatus").textContent = "连接成功";
-      $("#setupStatus").className = "status ok";
+      setSetupStatus("连接成功", false);
       setupPanel.hidden = true;
       appPanel.hidden = false;
       $("#boardLabel").textContent = boardId;
       $("#connInfo").textContent = "已连接云端 · 手机电脑数据同步";
       startAutoRefresh();
       await renderPosts();
+      showToast("连接成功");
       return true;
     }
 
@@ -408,13 +497,26 @@
     });
 
     $("#connectBtn").addEventListener("click", async () => {
-      $("#connectBtn").disabled = true;
-      await connect({
-        url: $("#cfgUrl").value,
-        key: $("#cfgKey").value,
-        board: $("#cfgBoard").value,
-      });
-      $("#connectBtn").disabled = false;
+      const btn = $("#connectBtn");
+      btn.disabled = true;
+      btn.classList.add("loading");
+      btn.dataset.label = btn.textContent;
+      btn.textContent = "连接中…";
+      setSetupStatus("正在连接…", false);
+      try {
+        await connect({
+          url: $("#cfgUrl").value,
+          key: $("#cfgKey").value,
+          board: $("#cfgBoard").value,
+        });
+      } catch (err) {
+        setSetupStatus(err.message || "连接失败", true);
+        showToast(err.message || "连接失败", true);
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove("loading");
+        btn.textContent = btn.dataset.label || "保存并连接";
+      }
     });
 
     $("#postForm").addEventListener("submit", async (e) => {
@@ -463,11 +565,21 @@
     });
 
     (async function init() {
+      try {
+        await window.__supabaseReady;
+      } catch (err) {
+        setSetupStatus(err.message, true);
+        showToast(err.message, true);
+        setupPanel.hidden = false;
+        appPanel.hidden = true;
+        return;
+      }
+
       const params = new URLSearchParams(location.search);
       const builtIn = getBuiltInConfig();
       const saved = loadConfig();
-      const url = ($("#cfgUrl").value || params.get("url") || saved?.url || builtIn.url || "").trim();
-      const key = ($("#cfgKey").value || saved?.key || builtIn.key || "").trim();
+      const url = (params.get("url") || saved?.url || builtIn.url || "").trim();
+      const key = (saved?.key || builtIn.key || "").trim();
       const board = (params.get("board") || saved?.board || builtIn.board || "main").trim() || "main";
 
       $("#cfgUrl").value = url;
@@ -475,7 +587,18 @@
       $("#cfgBoard").value = board;
 
       if (url && key) {
-        await connect({ url, key, board });
+        setSetupStatus("正在自动连接…", false);
+        try {
+          const ok = await connect({ url, key, board });
+          if (!ok) {
+            setupPanel.hidden = false;
+            appPanel.hidden = true;
+          }
+        } catch (err) {
+          setSetupStatus(err.message || "自动连接失败", true);
+          setupPanel.hidden = false;
+          appPanel.hidden = true;
+        }
       } else {
         setupPanel.hidden = false;
         appPanel.hidden = true;
