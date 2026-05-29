@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>分享墙</title>
+  <style>
+    :root {
+      --bg: #f5f4f1;
+      --card: #ffffff;
+      --text: #1a1a1a;
+      --muted: #6b6b6b;
+      --border: #e8e6e1;
+      --accent: #2d6a4f;
+      --accent-hover: #1b4332;
+      --danger: #c1121f;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.04);
+      --radius: 12px;
+      --font: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font);
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+    }
+    .page { max-width: 720px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+    .header { text-align: center; margin-bottom: 1.25rem; }
+    .header h1 { margin: 0; font-size: 1.75rem; font-weight: 600; }
+    .subtitle { margin: 0.5rem 0 0; color: var(--muted); font-size: 0.95rem; }
+    .hint {
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--muted);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+    }
+    .section-title { margin: 0 0 1rem; font-size: 1rem; font-weight: 600; }
+    .composer { margin-bottom: 2rem; }
+    .field { display: block; margin-bottom: 1rem; }
+    .field > span {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--muted);
+    }
+    textarea, input[type="url"], input[type="file"] {
+      width: 100%;
+      font: inherit;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.65rem 0.85rem;
+    }
+    textarea { resize: vertical; min-height: 96px; }
+    textarea:focus, input[type="url"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.12);
+    }
+    .file-row { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+    .checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .preview {
+      margin-top: 0.75rem;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      max-height: 240px;
+    }
+    .preview img { display: block; width: 100%; max-height: 240px; object-fit: cover; }
+    .actions { display: flex; gap: 0.75rem; margin-top: 0.25rem; flex-wrap: wrap; }
+    .btn {
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      padding: 0.55rem 1.1rem;
+      transition: background 0.15s, color 0.15s;
+    }
+    .btn.primary { background: var(--accent); color: #fff; }
+    .btn.primary:hover { background: var(--accent-hover); }
+    .btn.ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn.ghost:hover { background: var(--bg); color: var(--text); }
+    .btn.small { padding: 0.35rem 0.75rem; font-size: 0.85rem; }
+    .btn.danger { color: var(--danger); border-color: #f5c2c7; }
+    .btn.danger:hover { background: #fff5f5; }
+    .feed-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      gap: 0.5rem;
+    }
+    .feed-head .section-title { margin: 0; }
+    .posts { display: flex; flex-direction: column; gap: 1rem; }
+    .post {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.25rem 1.5rem;
+    }
+    .post-text { margin: 0 0 0.75rem; white-space: pre-wrap; word-break: break-word; }
+    .post-link {
+      display: inline-block;
+      margin-bottom: 0.75rem;
+      color: var(--accent);
+      font-size: 0.9rem;
+      word-break: break-all;
+    }
+    .post-image {
+      display: block;
+      width: 100%;
+      max-height: 360px;
+      object-fit: contain;
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      background: var(--bg);
+    }
+    .post-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .post-actions { display: flex; gap: 0.5rem; }
+    .empty { text-align: center; color: var(--muted); padding: 2rem; }
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--text);
+      color: #fff;
+      padding: 0.65rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      z-index: 100;
+    }
+    .toast.error { background: var(--danger); }
+    input[type="file"].hidden-input { display: none; }
+    @media (max-width: 480px) {
+      .page { padding: 1.5rem 1rem 3rem; }
+      .card, .post { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <h1>分享墙</h1>
+      <p class="subtitle">发表文字、链接与图片，随时编辑</p>
+    </header>
+
+    <p class="hint">
+      无需安装，双击本文件即可使用。要<strong>查看带图片的备份</strong>，请导出「网页备份」并双击打开；
+      要恢复进分享墙编辑，请用「导入备份」选择 .json 或网页备份文件（不要直接双击 .json）。
+    </p>
+
+    <div class="toolbar">
+      <button type="button" class="btn ghost small" id="exportHtmlBtn">导出网页备份</button>
+      <button type="button" class="btn ghost small" id="exportBtn">导出数据备份</button>
+      <button type="button" class="btn ghost small" id="importBtn">导入备份</button>
+      <input type="file" id="importFile" class="hidden-input" accept=".json,.html,application/json,text/html" />
+    </div>
+
+    <section class="composer card">
+      <h2 class="section-title" id="formTitle">发表内容</h2>
+      <form id="postForm">
+        <input type="hidden" id="editId" />
+        <label class="field">
+          <span>文字</span>
+          <textarea id="text" rows="4" placeholder="写下你想分享的内容…"></textarea>
+        </label>
+        <label class="field">
+          <span>链接</span>
+          <input type="url" id="link" placeholder="https://example.com" />
+        </label>
+        <label class="field">
+          <span>图片（单张建议小于 2MB）</span>
+          <div class="file-row">
+            <input type="file" id="image" accept="image/jpeg,image/png,image/gif,image/webp" />
+            <label class="checkbox" id="removeImageWrap" hidden>
+              <input type="checkbox" id="removeImage" /> 移除当前图片
+            </label>
+          </div>
+          <div class="preview" id="preview" hidden>
+            <img id="previewImg" alt="预览" />
+          </div>
+        </label>
+        <div class="actions">
+          <button type="submit" class="btn primary" id="submitBtn">发布</button>
+          <button type="button" class="btn ghost" id="cancelEdit" hidden>取消编辑</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="feed">
+      <div class="feed-head">
+        <h2 class="section-title">全部内容</h2>
+      </div>
+      <div id="posts" class="posts"></div>
+      <p id="empty" class="empty" hidden>还没有内容，发表第一条吧。</p>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script>
+    const STORAGE_KEY = "share-board-posts-v1";
+    const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+
+    const $ = (sel) => document.querySelector(sel);
+    const form = $("#postForm");
+    const editId = $("#editId");
+    const textEl = $("#text");
+    const linkEl = $("#link");
+    const imageEl = $("#image");
+    const preview = $("#preview");
+    const previewImg = $("#previewImg");
+    const removeImageWrap = $("#removeImageWrap");
+    const removeImage = $("#removeImage");
+    const formTitle = $("#formTitle");
+    const submitBtn = $("#submitBtn");
+    const cancelEdit = $("#cancelEdit");
+    const postsEl = $("#posts");
+    const emptyEl = $("#empty");
+    const toastEl = $("#toast");
+    const exportHtmlBtn = $("#exportHtmlBtn");
+    const exportBtn = $("#exportBtn");
+    const importBtn = $("#importBtn");
+    const importFile = $("#importFile");
+
+    let toastTimer;
+    let pendingImage = "";
+
+    function showToast(msg, isError) {
+      clearTimeout(toastTimer);
+      toastEl.textContent = msg;
+      toastEl.className = "toast" + (isError ? " error" : "");
+      toastEl.hidden = false;
+      toastTimer = setTimeout(() => { toastEl.hidden = true; }, 2800);
+    }
+
+    function now() {
+      return new Date().toISOString();
+    }
+
+    function uid() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function formatTime(iso) {
+      return new Date(iso).toLocaleString("zh-CN", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+
+    function loadPosts() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function savePosts(posts) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
+      } catch {
+        showToast("存储空间不足，请删除部分内容或较小的图片", true);
+        throw new Error("存储失败");
+      }
+    }
+
+    function resetForm() {
+      editId.value = "";
+      form.reset();
+      pendingImage = "";
+      preview.hidden = true;
+      removeImageWrap.hidden = true;
+      removeImage.checked = false;
+      formTitle.textContent = "发表内容";
+      submitBtn.textContent = "发布";
+      cancelEdit.hidden = true;
+    }
+
+    function showPreview(src) {
+      previewImg.src = src;
+      preview.hidden = false;
+    }
+
+    function compressImage(file) {
+      return new Promise((resolve, reject) => {
+        if (file.size <= MAX_IMAGE_BYTES && file.type === "image/jpeg") {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error("图片读取失败"));
+          reader.readAsDataURL(file);
+          return;
+        }
+
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          let { width, height } = img;
+          const maxSide = 1600;
+          if (width > maxSide || height > maxSide) {
+            const ratio = Math.min(maxSide / width, maxSide / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+          let quality = 0.85;
+          let dataUrl = canvas.toDataURL("image/jpeg", quality);
+          while (dataUrl.length > MAX_IMAGE_BYTES * 1.37 && quality > 0.4) {
+            quality -= 0.1;
+            dataUrl = canvas.toDataURL("image/jpeg", quality);
+          }
+          if (dataUrl.length > MAX_IMAGE_BYTES * 1.37) {
+            reject(new Error("图片过大，请换一张较小的图片"));
+          } else {
+            resolve(dataUrl);
+          }
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error("图片无法解析"));
+        };
+        img.src = url;
+      });
+    }
+
+    function isValidImageSrc(src) {
+      return typeof src === "string" && src.startsWith("data:image/");
+    }
+
+    function normalizePost(raw) {
+      const p = {
+        id: raw.id || uid(),
+        text: (raw.text || "").trim(),
+        link: (raw.link || "").trim(),
+        image: raw.image || "",
+        created_at: raw.created_at || now(),
+        updated_at: raw.updated_at || raw.created_at || now(),
+      };
+      if (p.image && !isValidImageSrc(p.image)) {
+        p.image = "";
+      }
+      return p;
+    }
+
+    function createPostCard(post, { editable } = { editable: true }) {
+      const card = document.createElement("article");
+      card.className = "post";
+      card.dataset.id = post.id;
+
+      if (post.text) {
+        const p = document.createElement("p");
+        p.className = "post-text";
+        p.textContent = post.text;
+        card.appendChild(p);
+      }
+
+      if (post.link) {
+        const a = document.createElement("a");
+        a.className = "post-link";
+        a.href = post.link;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.textContent = post.link;
+        card.appendChild(a);
+      }
+
+      if (isValidImageSrc(post.image)) {
+        const img = document.createElement("img");
+        img.className = "post-image";
+        img.alt = "分享图片";
+        img.loading = "lazy";
+        img.src = post.image;
+        card.appendChild(img);
+      }
+
+      const meta = document.createElement("div");
+      meta.className = "post-meta";
+      const time = document.createElement("time");
+      const edited = post.updated_at !== post.created_at;
+      time.textContent = formatTime(post.updated_at) + (edited ? " · 已编辑" : "");
+      meta.appendChild(time);
+
+      if (editable) {
+        const actions = document.createElement("div");
+        actions.className = "post-actions";
+        const editB = document.createElement("button");
+        editB.type = "button";
+        editB.className = "btn ghost small";
+        editB.dataset.edit = post.id;
+        editB.textContent = "编辑";
+        const delB = document.createElement("button");
+        delB.type = "button";
+        delB.className = "btn ghost small danger";
+        delB.dataset.delete = post.id;
+        delB.textContent = "删除";
+        actions.append(editB, delB);
+        meta.appendChild(actions);
+      }
+
+      card.appendChild(meta);
+      return card;
+    }
+
+    function render() {
+      const posts = loadPosts()
+        .map(normalizePost)
+        .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+      postsEl.replaceChildren();
+      emptyEl.hidden = posts.length > 0;
+      for (const post of posts) {
+        postsEl.appendChild(createPostCard(post));
+      }
+    }
+
+    function parseBackupText(text) {
+      const trimmed = text.trim();
+      if (trimmed.startsWith("<!") || trimmed.startsWith("<html")) {
+        const doc = new DOMParser().parseFromString(text, "text/html");
+        const node = doc.getElementById("backup-data");
+        if (!node) throw new Error("不是有效的分享墙网页备份");
+        const raw = node.textContent.trim();
+        const json =
+          node.dataset.encoding === "base64"
+            ? decodeURIComponent(escape(atob(raw)))
+            : raw;
+        return JSON.parse(json);
+      }
+      return JSON.parse(trimmed);
+    }
+
+    function buildHtmlBackup(posts) {
+      const payload = btoa(unescape(encodeURIComponent(JSON.stringify(posts))));
+      const date = new Date().toISOString().slice(0, 10);
+      const endTag = "<" + "/script>";
+      const parts = [
+        "<!DOCTYPE html><html lang=\"zh-CN\"><head><meta charset=\"UTF-8\"/>",
+        "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"/>",
+        "<title>分享墙备份 ", date, "</title><style>",
+        "body{margin:0;font-family:system-ui,sans-serif;background:#f5f4f1}",
+        ".page{max-width:720px;margin:0 auto;padding:2rem 1.25rem}",
+        "h1{text-align:center}.sub{text-align:center;color:#666}",
+        ".post{background:#fff;border:1px solid #e8e6e1;border-radius:12px;padding:1.25rem;margin-bottom:1rem}",
+        ".post-text{white-space:pre-wrap}.post-link{color:#2d6a4f;word-break:break-all}",
+        ".post-image{max-width:100%;border-radius:8px}time{color:#666;font-size:.8rem}",
+        "</style></head><body><div class=\"page\"><h1>分享墙备份</h1>",
+        "<p class=\"sub\">导出日期：", date, " · 双击本文件即可查看</p><div id=\"posts\"></div></div>",
+        "<script type=\"application/json\" id=\"backup-data\" data-encoding=\"base64\">",
+        payload,
+        endTag,
+        "<script>(function(){var n=document.getElementById('backup-data');",
+        "var j=decodeURIComponent(escape(atob(n.textContent.trim())));",
+        "var posts=JSON.parse(j);var r=document.getElementById('posts');",
+        "posts.sort(function(a,b){return new Date(b.updated_at)-new Date(a.updated_at)});",
+        "posts.forEach(function(post){var c=document.createElement('article');c.className='post';",
+        "if(post.text){var p=document.createElement('p');p.className='post-text';",
+        "p.textContent=post.text;c.appendChild(p)}",
+        "if(post.link){var a=document.createElement('a');a.className='post-link';",
+        "a.href=post.link;a.target='_blank';a.textContent=post.link;c.appendChild(a)}",
+        "if(post.image&&post.image.indexOf('data:image/')===0){var img=document.createElement('img');",
+        "img.className='post-image';img.src=post.image;c.appendChild(img)}",
+        "var t=document.createElement('time');t.textContent=new Date(post.updated_at).toLocaleString('zh-CN');",
+        "c.appendChild(t);r.appendChild(c)})})()",
+        endTag,
+        "</body></html>",
+      ];
+      return parts.join("");
+    }
+
+    function downloadFile(filename, content, mime) {
+      const blob = new Blob([content], { type: mime });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    imageEl.addEventListener("change", async () => {
+      const file = imageEl.files[0];
+      if (!file) return;
+      try {
+        pendingImage = await compressImage(file);
+        showPreview(pendingImage);
+        removeImage.checked = false;
+      } catch (e) {
+        showToast(e.message, true);
+        imageEl.value = "";
+        pendingImage = "";
+      }
+    });
+
+    cancelEdit.addEventListener("click", resetForm);
+
+    exportHtmlBtn.addEventListener("click", () => {
+      const posts = loadPosts().map(normalizePost);
+      if (!posts.length) {
+        showToast("暂无内容可导出", true);
+        return;
+      }
+      const date = new Date().toISOString().slice(0, 10);
+      downloadFile(`分享墙备份-${date}.html`, buildHtmlBackup(posts), "text/html;charset=utf-8");
+      showToast("已导出网页备份，双击即可查看图片");
+    });
+
+    exportBtn.addEventListener("click", () => {
+      const posts = loadPosts().map(normalizePost);
+      const date = new Date().toISOString().slice(0, 10);
+      downloadFile(`分享墙数据-${date}.json`, JSON.stringify(posts, null, 2), "application/json");
+      showToast("已导出数据备份（用于导入恢复）");
+    });
+
+    importBtn.addEventListener("click", () => importFile.click());
+
+    async function importPostsFromArray(incoming) {
+      if (!Array.isArray(incoming)) throw new Error("格式不正确");
+      const normalized = incoming.map(normalizePost);
+      const withImages = normalized.filter((p) => p.image).length;
+      const merge = confirm(
+        "点击「确定」合并到现有内容；「取消」则替换全部内容\n\n" +
+          `共 ${normalized.length} 条，其中 ${withImages} 条含图片`
+      );
+      let posts = merge ? loadPosts().map(normalizePost) : [];
+      const ids = new Set(posts.map((p) => p.id));
+      let imageLost = 0;
+
+      for (let i = 0; i < incoming.length; i++) {
+        const p = normalized[i];
+        const raw = incoming[i];
+        if (raw.image && !p.image) imageLost++;
+        if (merge && ids.has(p.id)) {
+          posts[posts.findIndex((x) => x.id === p.id)] = p;
+        } else {
+          posts.push(p);
+          ids.add(p.id);
+        }
+      }
+
+      savePosts(posts);
+      render();
+      if (imageLost > 0) {
+        showToast(`导入完成，${imageLost} 条图片因格式无效未恢复`, true);
+      } else {
+        showToast("导入成功，图片已恢复");
+      }
+    }
+
+    importFile.addEventListener("change", async () => {
+      const file = importFile.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const incoming = parseBackupText(text);
+        await importPostsFromArray(incoming);
+      } catch (e) {
+        showToast(e.message || "导入失败", true);
+      }
+      importFile.value = "";
+    });
+
+    postsEl.addEventListener("click", (e) => {
+      const editBtn = e.target.closest("[data-edit]");
+      const delBtn = e.target.closest("[data-delete]");
+      const posts = loadPosts();
+
+      if (editBtn) {
+        const post = posts.find((p) => p.id === editBtn.dataset.edit);
+        if (!post) return;
+        editId.value = post.id;
+        textEl.value = post.text || "";
+        linkEl.value = post.link || "";
+        imageEl.value = "";
+        pendingImage = post.image || "";
+        removeImage.checked = false;
+        if (post.image) {
+          showPreview(post.image);
+          removeImageWrap.hidden = false;
+        } else {
+          preview.hidden = true;
+          removeImageWrap.hidden = true;
+        }
+        formTitle.textContent = "编辑内容";
+        submitBtn.textContent = "保存";
+        cancelEdit.hidden = false;
+        form.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+
+      if (delBtn) {
+        if (!confirm("确定删除这条内容吗？")) return;
+        const id = delBtn.dataset.delete;
+        savePosts(posts.filter((p) => p.id !== id));
+        if (editId.value === id) resetForm();
+        render();
+        showToast("已删除");
+      }
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const text = textEl.value.trim();
+      const link = linkEl.value.trim();
+      let image = pendingImage;
+
+      if (editId.value && removeImage.checked) image = "";
+
+      if (!text && !link && !image) {
+        showToast("请至少填写文字、链接或上传图片", true);
+        return;
+      }
+
+      submitBtn.disabled = true;
+      try {
+        let posts = loadPosts();
+        const ts = now();
+        if (editId.value) {
+          const i = posts.findIndex((p) => p.id === editId.value);
+          if (i >= 0) {
+            posts[i] = normalizePost({
+              ...posts[i],
+              text,
+              link,
+              image,
+              updated_at: ts,
+            });
+          }
+          showToast("已保存");
+        } else {
+          posts.push(normalizePost({
+            id: uid(),
+            text,
+            link,
+            image,
+            created_at: ts,
+            updated_at: ts,
+          }));
+          showToast("发布成功");
+        }
+        savePosts(posts.map(normalizePost));
+        resetForm();
+        render();
+      } catch (err) {
+        showToast(err.message, true);
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>

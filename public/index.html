@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>分享墙</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <h1>分享墙</h1>
+      <p class="subtitle">发表文字、链接与图片，随时编辑</p>
+    </header>
+
+    <section class="composer card" id="composer">
+      <h2 class="section-title" id="formTitle">发表内容</h2>
+      <form id="postForm">
+        <input type="hidden" id="editId" value="" />
+        <label class="field">
+          <span>文字</span>
+          <textarea id="text" rows="4" placeholder="写下你想分享的内容…"></textarea>
+        </label>
+        <label class="field">
+          <span>链接</span>
+          <input type="url" id="link" placeholder="https://example.com" />
+        </label>
+        <label class="field">
+          <span>图片</span>
+          <div class="file-row">
+            <input type="file" id="image" accept="image/jpeg,image/png,image/gif,image/webp" />
+            <label class="checkbox" id="removeImageWrap" hidden>
+              <input type="checkbox" id="removeImage" />
+              移除当前图片
+            </label>
+          </div>
+          <div class="preview" id="preview" hidden>
+            <img id="previewImg" alt="预览" />
+          </div>
+        </label>
+        <div class="actions">
+          <button type="submit" class="btn primary" id="submitBtn">发布</button>
+          <button type="button" class="btn ghost" id="cancelEdit" hidden>取消编辑</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="feed">
+      <div class="feed-head">
+        <h2 class="section-title">全部内容</h2>
+        <button type="button" class="btn ghost small" id="refreshBtn">刷新</button>
+      </div>
+      <div id="posts" class="posts"></div>
+      <p id="empty" class="empty" hidden>还没有内容，发表第一条吧。</p>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
