@@ -60,6 +60,7 @@
     .preview { margin-top: 0.5rem; max-height: 200px; overflow: hidden; border-radius: 8px; border: 1px solid var(--border); }
     .preview img { width: 100%; max-height: 200px; object-fit: cover; }
     .checkbox { font-size: 0.85rem; color: var(--muted); display: flex; align-items: center; gap: 0.35rem; }
+    .share-box { font-size: 0.82rem; color: var(--muted); word-break: break-all; margin-top: 0.5rem; }
   </style>
 </head>
 <body>
@@ -72,8 +73,10 @@
     <section id="setupPanel" class="card">
       <h2 class="section-title">首次配置（仅需一次）</h2>
       <p class="hint">
-        请先在 Supabase 创建项目并运行 <code>cloud/supabase-setup.sql</code>。
-        详细步骤见 <strong>云端部署说明.md</strong>。
+        <strong>手机与电脑要看到相同内容，必须完成下方配置。</strong><br>
+        1. 打开 <a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a> 注册并新建项目<br>
+        2. SQL Editor 中运行仓库里的 <code>cloud/supabase-setup.sql</code><br>
+        3. Settings → API 复制 URL 与 anon 密钥，填到下方（或编辑 <code>cloud-config.js</code> 后 Push 到 GitHub）
       </p>
       <label class="field">
         <span>Supabase 项目 URL</span>
@@ -99,10 +102,12 @@
           <span class="status ok" id="connInfo">已连接</span>
           <div class="row">
             <span class="status">房间：<strong id="boardLabel"></strong></span>
+            <button type="button" class="btn ghost small" id="shareBtn">复制分享链接</button>
             <button type="button" class="btn ghost small" id="refreshBtn">刷新</button>
             <button type="button" class="btn ghost small" id="settingsBtn">改配置</button>
           </div>
         </div>
+        <p class="share-box" id="shareHint">把同一链接发给他人，即可远程查看与编辑（每 30 秒自动刷新）</p>
       </div>
 
       <section class="card">
@@ -139,15 +144,17 @@
 
   <div class="toast" id="toast" hidden></div>
 
+  <script src="cloud-config.js"></script>
   <script>
     const CFG_KEY = "share-board-cloud-config";
     const BUCKET = "share-board";
 
     let supabase = null;
-    let boardId = "default";
+    let boardId = "main";
     let pendingFile = null;
     let currentImagePath = "";
     let toastTimer;
+    let refreshTimer = null;
 
     const $ = (s) => document.querySelector(s);
     const setupPanel = $("#setupPanel");
@@ -176,6 +183,26 @@
       localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
     }
 
+    function getBuiltInConfig() {
+      const b = window.SHARE_BOARD_CLOUD || {};
+      return {
+        url: (b.url || "").trim(),
+        key: (b.key || "").trim(),
+        board: (b.board || "main").trim() || "main",
+      };
+    }
+
+    function shareUrl() {
+      const u = new URL(location.href);
+      u.searchParams.set("board", boardId);
+      return u.toString();
+    }
+
+    function startAutoRefresh() {
+      if (refreshTimer) clearInterval(refreshTimer);
+      refreshTimer = setInterval(() => { renderPosts(); }, 30000);
+    }
+
     function formatTime(iso) {
       return new Date(iso).toLocaleString("zh-CN", {
         month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
@@ -191,7 +218,7 @@
     async function connect(cfg) {
       const url = (cfg.url || "").trim();
       const key = (cfg.key || "").trim();
-      boardId = (cfg.board || "default").trim() || "default";
+      boardId = (cfg.board || "main").trim() || "main";
       if (!url || !key) {
         showToast("请填写 URL 和 anon 密钥", true);
         return false;
@@ -210,7 +237,8 @@
       setupPanel.hidden = true;
       appPanel.hidden = false;
       $("#boardLabel").textContent = boardId;
-      $("#connInfo").textContent = "已连接云端 · " + url.replace(/^https?:\/\//, "").split("/")[0];
+      $("#connInfo").textContent = "已连接云端 · 手机电脑数据同步";
+      startAutoRefresh();
       await renderPosts();
       return true;
     }
@@ -359,6 +387,15 @@
 
     $("#cancelEdit").addEventListener("click", resetForm);
     $("#refreshBtn").addEventListener("click", () => renderPosts());
+    $("#shareBtn").addEventListener("click", async () => {
+      const link = shareUrl();
+      try {
+        await navigator.clipboard.writeText(link);
+        showToast("分享链接已复制");
+      } catch {
+        prompt("复制此链接发给他人：", link);
+      }
+    });
     $("#settingsBtn").addEventListener("click", () => {
       appPanel.hidden = true;
       setupPanel.hidden = false;
@@ -427,14 +464,21 @@
 
     (async function init() {
       const params = new URLSearchParams(location.search);
-      const c = loadConfig();
-      if (params.get("url")) $("#cfgUrl").value = params.get("url");
-      if (params.get("board")) $("#cfgBoard").value = params.get("board");
-      if (c) {
-        $("#cfgUrl").value = c.url || "";
-        $("#cfgKey").value = c.key || "";
-        $("#cfgBoard").value = c.board || "default";
-        if (c.url && c.key) await connect(c);
+      const builtIn = getBuiltInConfig();
+      const saved = loadConfig();
+      const url = ($("#cfgUrl").value || params.get("url") || saved?.url || builtIn.url || "").trim();
+      const key = ($("#cfgKey").value || saved?.key || builtIn.key || "").trim();
+      const board = (params.get("board") || saved?.board || builtIn.board || "main").trim() || "main";
+
+      $("#cfgUrl").value = url;
+      $("#cfgKey").value = key;
+      $("#cfgBoard").value = board;
+
+      if (url && key) {
+        await connect({ url, key, board });
+      } else {
+        setupPanel.hidden = false;
+        appPanel.hidden = true;
       }
     })();
   </script>
